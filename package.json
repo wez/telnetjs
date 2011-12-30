@@ -1,0 +1,15 @@
+{
+  "author": "Wez Furlong <wez@wezfurlong.org> (http://wezfurlong.org)",
+  "name": "telnet",
+  "description": "Telnet Protocol Listener",
+  "version": "0.1.0",
+  "repository": {
+    "url": ""
+  },
+  "main": "telnet.js",
+  "engines": {
+    "node": "~0.6.5"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}
