@@ -183,7 +183,7 @@ the client to receive.
 Sends a telnet "Interpret As Command" (IAC) sequence to the client.
 dodontwill is one of the telnet DONT, DO, WONT, WILL command ids.
 
-command is either and telnet option id (8-bit integer) or an array of
+command is either a telnet option id (8-bit integer) or an array of
 8-bit integers to be used as part of a sub-negotiation.
 
 *If you find that you need this method, chances are that we need to
