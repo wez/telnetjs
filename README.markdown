@@ -12,6 +12,12 @@ text.
 
 ## Usage
 
+Install it via NPM:
+
+    npm install wez-telnet
+
+Now use it:
+
      var telnet = require('wez-telnet');
      var s = new telnet.Server(function (client) {
         // I am the connection callback
