@@ -1,9 +1,10 @@
 {
   "author": "Wez Furlong <wez@wezfurlong.org> (http://wezfurlong.org)",
-  "name": "telnet",
+  "name": "wez-telnet",
   "description": "Telnet Protocol Listener",
   "version": "0.1.0",
   "homepage": "https://github.com/wez/telnetjs",
+  "keywords": ["telnet", "server"],
   "repository": {
     "type": "git",
     "url": "git://github.com/wez/telnetjs.git"

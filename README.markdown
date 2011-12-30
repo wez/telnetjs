@@ -12,7 +12,7 @@ text.
 
 ## Usage
 
-     var telnet = require('telnet');
+     var telnet = require('wez-telnet');
      var s = new telnet.Server(function (client) {
         // I am the connection callback
         console.log("connected term=%s %dx%d",
