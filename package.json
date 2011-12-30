@@ -3,8 +3,10 @@
   "name": "telnet",
   "description": "Telnet Protocol Listener",
   "version": "0.1.0",
+  "homepage": "https://github.com/wez/telnetjs",
   "repository": {
-    "url": ""
+    "type": "git",
+    "url": "git://github.com/wez/telnetjs.git"
   },
   "main": "telnet.js",
   "engines": {
