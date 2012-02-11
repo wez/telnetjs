@@ -256,6 +256,20 @@ TelnetStream.prototype.processSB = function (buf)
       // Got it; all buffers up until now comprise the SB data payload
       var pl = buf.slice(0, i - 1);
 
+      // need to de-quote IAC IAC sequences
+      var unq = new Buffer(pl.length);
+      var d, s; // dest, src
+      for (d = 0, s = 0; s < pl.length; s++, d++) {
+        if (pl[s] == IAC && (s + 1) < pl.length && pl[s+1] == IAC) {
+          unq[d] = IAC;
+          s++;
+        } else {
+          unq[d] = pl[s];
+        }
+      }
+      //console.log("unescape", pl, unq);
+      pl = unq;
+
       this.state = 0;
       switch (this.neg_opt) {
         case OPT_WINDOW_SIZE:
