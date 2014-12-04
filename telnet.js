@@ -42,41 +42,44 @@ var events = require('events'),
     zlib = require('zlib'),
     net = require('net');
 
-var IAC     = 255; // interpret as command
-var DONT    = 254; // you are not to use option
-var DO      = 253; // please use option
-var WONT    = 252; // I won't use option
-var WILL    = 251; // I will use option
-var SB      = 250; // sub-negotiation
-var GA      = 249; // Go-ahead
-var EL      = 248; // Erase line
-var EC      = 247; // Erase character
-var AYT     = 246; // Are you there?
-var AO      = 245; // Abort output (but let prog finish)
-var IP      = 244; // Interrupt (permanently)
-var BREAK   = 243;
-var DM      = 242; // Data mark
-var NOP     = 241;
-var SE      = 240; // End sub-negotiation
-var EOR     = 239; // End of record (transparent mode)
-var ABORT   = 238; // Abort process
-var SUSP    = 237; // Suspend process
-var EOF     = 236; // End of file
-var SYNCH   = 242;
+var Commands = {
+    IAC:     255, // interpret as command
+    DONT:    254, // you are not to use option
+    DO:      253, // please use option
+    WONT:    252, // I won't use option
+    WILL:    251, // I will use option
+    SB:      250, // sub-negotiation
+    GA:      249, // Go-ahead
+    EL:      248, // Erase line
+    EC:      247, // Erase character
+    AYT:     246, // Are you there?
+    AO:      245, // Abort output (but let prog finish)
+    IP:      244, // Interrupt (permanently)
+    BREAK:   243,
+    DM:      242, // Data mark
+    NOP:     241,
+    SE:      240, // End sub-negotiation
+    EOR:     239, // End of record (transparent mode)
+    ABORT:   238, // Abort process
+    SUSP:    237, // Suspend process
+    EOF:     236, // End of file
+    SYNCH:   242
+};
 
-var OPT_BINARY            = 0; // RFC 856
-var OPT_ECHO              = 1; // RFC 857
-var OPT_SUPPRESS_GO_AHEAD = 3; // RFC 858
-var OPT_STATUS            = 5; // RFC 859
-var OPT_TIMING_MARK       = 6; // RFC 860
-var OPT_TTYPE             = 24; // RFC 930, 1091
-var OPT_WINDOW_SIZE       = 31; // RFC 1073
-var OPT_LINE_MODE         = 34; // RFC 1184
-var OPT_NEW_ENVIRON       = 39; // RFC 1572
-var OPT_COMPRESS2         = 86; // http://www.zuggsoft.com/zmud/mcp.htm
-
-var TELQUAL_IS   = 0;
-var TELQUAL_SEND = 1;
+var Options = {
+    OPT_BINARY:            0,  // RFC 856
+    OPT_ECHO:              1,  // RFC 857
+    OPT_SUPPRESS_GO_AHEAD: 3,  // RFC 858
+    OPT_STATUS:            5,  // RFC 859
+    OPT_TIMING_MARK:       6,  // RFC 860
+    OPT_TTYPE:             24, // RFC 930, 1091
+    OPT_WINDOW_SIZE:       31, // RFC 1073
+    OPT_LINE_MODE:         34, // RFC 1184
+    OPT_NEW_ENVIRON:       39, // RFC 1572
+    OPT_COMPRESS2:         86, // http://www.zuggsoft.com/zmud/mcp.htm
+    TELQUAL_IS:            0,
+    TELQUAL_SEND:          1
+};
 
 /* A telnet protocol stream.
  * Emits processed data:
@@ -113,7 +116,7 @@ TelnetStream.prototype.write = function (data, encoding) {
   var i;
   var iacs = 0;
   for (i = 0; i < data.length; i++) {
-    if (data[i] == IAC) {
+    if (data[i] == Commands.IAC) {
       iacs++;
     }
   }
@@ -123,8 +126,8 @@ TelnetStream.prototype.write = function (data, encoding) {
     var j;
     for (i = 0, j = 0; i < data.length; i++) {
       b[j++] = data[i];
-      if (data[i] == IAC) {
-        b[j++] = IAC;
+      if (data[i] == Commands.IAC) {
+        b[j++] = Commands.IAC;
       }
     }
     data = b;
@@ -159,7 +162,7 @@ TelnetStream.prototype.pipe = function (dest, opts) {
 
 TelnetStream.prototype.telnetCommand = function (dodontwill, command)
 {
-  var bytes = [IAC, dodontwill];
+  var bytes = [Commands.IAC, dodontwill];
   if (command instanceof Array) {
     bytes.push.apply(bytes, command);
   } else {
@@ -250,9 +253,9 @@ TelnetStream.prototype.processSB = function (buf)
   /* This code looks a little weird; I expect it to be modified to
    * handle looking across buffer boundaries at some point */
   for (i = 0; i < buf.length; i++) {
-    if (buf[i] == IAC) {
+    if (buf[i] == Commands.IAC) {
       seen_iac = true;
-    } else if (buf[i] == SE && seen_iac) {
+    } else if (buf[i] == Commands.SE && seen_iac) {
       // Got it; all buffers up until now comprise the SB data payload
       var pl = buf.slice(0, i - 1);
 
@@ -260,8 +263,8 @@ TelnetStream.prototype.processSB = function (buf)
       var unq = new Buffer(pl.length);
       var d, s; // dest, src
       for (d = 0, s = 0; s < pl.length; s++, d++) {
-        if (pl[s] == IAC && (s + 1) < pl.length && pl[s+1] == IAC) {
-          unq[d] = IAC;
+        if (pl[s] == Commands.IAC && (s + 1) < pl.length && pl[s+1] == Commands.IAC) {
+          unq[d] = Commands.IAC;
           s++;
         } else {
           unq[d] = pl[s];
@@ -272,16 +275,16 @@ TelnetStream.prototype.processSB = function (buf)
 
       this.state = 0;
       switch (this.neg_opt) {
-        case OPT_WINDOW_SIZE:
+        case Options.OPT_WINDOW_SIZE:
           this.windowSize = [pl.readInt16BE(0), pl.readInt16BE(2)];
           this.emit('resize', this.windowSize[0], this.windowSize[1]);
           break;
 
-        case OPT_NEW_ENVIRON:
+        case Options.OPT_NEW_ENVIRON:
           parse_env(telnet, pl);
           break;
 
-        case OPT_TTYPE:
+        case Options.OPT_TTYPE:
           this.term = pl.toString('ascii', 1);
           /* fall through */
         default:
@@ -314,7 +317,7 @@ TelnetStream.prototype.processIncomingData = function (buf)
 
   // console.log(buf.length, buf);
 
-  if (this.state == SB) {
+  if (this.state == Commands.SB) {
     return this.processSB(buf);
   }
 
@@ -340,7 +343,7 @@ TelnetStream.prototype.processIncomingData = function (buf)
   /* beware: emitData resets both `buf' and `i'! */
   i = 0;
   while (i < buf.length) {
-    if (buf[i] != IAC) {
+    if (buf[i] != Commands.IAC) {
       i++;
       continue;
     }
@@ -350,43 +353,43 @@ TelnetStream.prototype.processIncomingData = function (buf)
 
     var cmd = buf[i + 1];
     switch (cmd) {
-      case IP:
+      case Commands.IP:
         this.emit('interrupt');
         eat(2);
         break;
-      case SUSP:
+      case Commands.SUSP:
         this.emit('suspend');
         eat(2);
         break;
 
-      case SB:
+      case Commands.SB:
         // Option being negotiated
         this.neg_opt = buf[i+2];
-        this.state = SB;
+        this.state = Commands.SB;
         return this.processSB(buf.slice(i+3));
 
-      case WILL:
+      case Commands.WILL:
         var opt = buf[i+2];
         //console.log("will", opt);
         switch (opt) {
-          case OPT_TTYPE:
+          case Options.OPT_TTYPE:
             // They will, so we need to ask for it
-            this.telnetCommand(SB, [OPT_TTYPE, TELQUAL_SEND, IAC, SE]);
+            this.telnetCommand(Commands.SB, [Options.OPT_TTYPE, Options.TELQUAL_SEND, Commands.IAC, Commands.SE]);
             break;
-          case OPT_NEW_ENVIRON:
-            this.telnetCommand(SB, [OPT_NEW_ENVIRON, TELQUAL_SEND, IAC, SE]);
+          case Options.OPT_NEW_ENVIRON:
+            this.telnetCommand(Commands.SB, [Options.OPT_NEW_ENVIRON, Options.TELQUAL_SEND, Commands.IAC, Commands.SE]);
             break;
-          case OPT_COMPRESS2:
+          case Options.OPT_COMPRESS2:
             // TinTin++ and other MUD clients support this
-            this.telnetCommand(SB, [OPT_COMPRESS2, IAC, SE]);
+            this.telnetCommand(Commands.SB, [Options.OPT_COMPRESS2, Commands.IAC, Commands.SE]);
             this.deflate = zlib.createDeflate({level: 9});
             this.deflate.pipe(this.stream);
             call_next_neg(this);
             break;
-          case OPT_WINDOW_SIZE:
+          case Options.OPT_WINDOW_SIZE:
             // they will send the window size via SB
             break;
-          case OPT_BINARY:
+          case Options.OPT_BINARY:
             this.binary = true;
             /* fall through */
           default:
@@ -395,34 +398,36 @@ TelnetStream.prototype.processIncomingData = function (buf)
         }
         eat(3);
         break;
-      case WONT:
+      case Commands.WONT:
         this.emit('wont', buf[i+2]);
         eat(3);
         call_next_neg(this);
         break;
-      case DO:
+      case Commands.DO:
         var opt = buf[i+2];
         switch (opt) {
-          // telnet(1) sends DO OPT_TIMING_MARK after an interrupt
-          case OPT_TIMING_MARK:
+          // telnet(1) sends DO TIMING_MARK after an interrupt
+          case Options.OPT_TIMING_MARK:
             /* pong! */
-            this.telnetCommand(WILL, OPT_TIMING_MARK);
+            this.telnetCommand(Commands.WILL, Options.OPT_TIMING_MARK);
             break;
           // they want us to do binary
-          case OPT_BINARY:
+          case Options.OPT_BINARY:
             this.binary = true;
-            this.telnetCommand(WILL, OPT_BINARY);
+            this.telnetCommand(Commands.WILL, Options.OPT_BINARY);
             break;
           default:
-            this.telnetCommand(WONT, opt);
-            this.emit('do', opt);
+            if (!this.emit('do', opt)) {
+              this.telnetCommand(Commands.WONT, opt);
+            }
         }
         eat(3);
         break;
-      case DONT:
+      case Commands.DONT:
         var opt = buf[i+2];
-        this.emit('dont', opt);
-        this.telnetCommand(WONT, opt);
+        if (!this.emit('dont', opt)) {
+          this.telnetCommand(Commands.WONT, opt);
+        }
         eat(3);
         break;
       default:
@@ -461,8 +466,8 @@ function Server(connectionListener)
 
     /* query the sorts of things that a server might be interested in,
      * and then trigger the connection event */
-    var opts = [OPT_TTYPE, OPT_WINDOW_SIZE, OPT_NEW_ENVIRON,
-        OPT_BINARY, OPT_COMPRESS2];
+    var opts = [Options.OPT_TTYPE, Options.OPT_WINDOW_SIZE, Options.OPT_NEW_ENVIRON,
+                Options.OPT_BINARY, Options.OPT_COMPRESS2];
 
     function neg_next() {
       if (!opts.length) {
@@ -471,7 +476,7 @@ function Server(connectionListener)
         return;
       }
       var opt = opts.shift();
-      stm.telnetCommand(DO, opt);
+      stm.telnetCommand(Commands.DO, opt);
     }
 
     stm.neg_cb = neg_next;
@@ -486,5 +491,12 @@ function Server(connectionListener)
 }
 
 exports.Server = Server;
+
+for (var name in Commands) {
+  exports[name] = Commands[name];
+}
+for (var name in Options) {
+  exports[name] = Options[name];
+}
 
 // vim:ts=2:sw=2:et:
